@@ -252,13 +252,15 @@ function voegItemToeAanScherm(winkel, tekst) {
 
   li.textContent = tekst;
 
-  li.onclick = function() {
+  li.addEventListener("click", function() {
 
-    li.remove();
+  var lijst = document.getElementById("lijst-" + winkel);
 
-    slaOp(winkel);
+  lijst.removeChild(li);
 
-  };
+  slaOp(winkel);
+
+});
 
   lijst.appendChild(li);
 
