@@ -206,42 +206,39 @@ Toevoegen
 
 var winkels = ["ALDI", "LIDL", "COLRUYT", "AH"];
 
-
 function laadAlles() {
 
-  winkels.forEach(function(winkel) {
+  var WEB_APP_URL =
+    "https://script.google.com/macros/s/AKfycbyEkR1MeVdnuNwF_WeoyaGUrfI_TX42PfZETjn5dM4iCG0pBwsBKutKuyi879m5VqomcA/exec";
 
-    var lijst = document.getElementById("lijst-" + winkel);
+  fetch(WEB_APP_URL + "?actie=laden")
+    .then(function(response) {
+      return response.json();
+    })
+    .then(function(items) {
 
-    lijst.innerHTML = "";
-
-    var opgeslagen =
-      localStorage.getItem("boodschappen_" + winkel);
-
-    if (!opgeslagen) {
-      return;
-    }
-
-    try {
-
-      var items = JSON.parse(opgeslagen);
-
-      items.forEach(function(item) {
-        voegItemToeAanScherm(winkel, item);
+      winkels.forEach(function(winkel) {
+        document.getElementById("lijst-" + winkel).innerHTML = "";
       });
 
-    } catch (e) {
+      items.forEach(function(item) {
 
-      console.log(e);
+        if (winkels.indexOf(item.winkel) !== -1) {
+          voegItemToeAanScherm(item.winkel, item.tekst);
+        }
 
-    }
+      });
 
-  });
-
+    })
+    .catch(function(error) {
+      console.log("Laden mislukt:", error);
+    });
 }
 
-
 function voegItemToeAanScherm(winkel, tekst) {
+
+  var WEB_APP_URL =
+    "https://script.google.com/macros/s/AKfycbyEkR1MeVdnuNwF_WeoyaGUrfI_TX42PfZETjn5dM4iCG0pBwsBKutKuyi879m5VqomcA/exec";
 
   var lijst =
     document.getElementById("lijst-" + winkel);
@@ -253,44 +250,58 @@ function voegItemToeAanScherm(winkel, tekst) {
 
   li.addEventListener("click", function() {
 
-  var lijst = document.getElementById("lijst-" + winkel);
+    var url =
+      WEB_APP_URL +
+      "?actie=verwijderen" +
+      "&winkel=" + encodeURIComponent(winkel) +
+      "&tekst=" + encodeURIComponent(tekst);
 
-  lijst.removeChild(li);
+    fetch(url)
+      .then(function(response) {
+        return response.json();
+      })
+      .then(function() {
 
-  slaOp(winkel);
+        lijst.removeChild(li);
 
-});
+      })
+      .catch(function(error) {
+
+        console.log("Verwijderen mislukt:", error);
+        alert("Artikel kon niet worden verwijderd.");
+
+      });
+
+  });
 
   lijst.appendChild(li);
-
 }
 
 
 function slaOp(winkel) {
 
-  var lijst =
-    document.getElementById("lijst-" + winkel);
+  var WEB_APP_URL =
+    "https://script.google.com/macros/s/AKfycbyEkR1MeVdnuNwF_WeoyaGUrfI_TX42PfZETjn5dM4iCG0pBwsBKutKuyi879m5VqomcA/exec";
+
+  var lijst = document.getElementById("lijst-" + winkel);
 
   var items = [];
-
-  var regels =
-    lijst.getElementsByTagName("li");
+  var regels = lijst.getElementsByTagName("li");
 
   for (var i = 0; i < regels.length; i++) {
-
     items.push(regels[i].textContent);
-
   }
 
   localStorage.setItem(
     "boodschappen_" + winkel,
     JSON.stringify(items)
   );
-
 }
 
-
 function voegToe() {
+
+  var WEB_APP_URL =
+    "https://script.google.com/macros/s/AKfycbyEkR1MeVdnuNwF_WeoyaGUrfI_TX42PfZETjn5dM4iCG0pBwsBKutKuyi879m5VqomcA/exec";
 
   var winkel =
     document.getElementById("winkel").value;
@@ -301,14 +312,46 @@ function voegToe() {
   var aantal =
     document.getElementById("aantal").value;
 
-
   if (!winkel) {
-
     alert("Selecteer eerst een winkel!");
-
     return;
-
   }
+
+  if (!boodschap) {
+    alert("Vul een boodschap in!");
+    return;
+  }
+
+  var tekst =
+    "(" + Number(aantal) + "x) " + boodschap;
+
+  var url =
+    WEB_APP_URL +
+    "?actie=toevoegen" +
+    "&winkel=" + encodeURIComponent(winkel) +
+    "&tekst=" + encodeURIComponent(tekst);
+
+  fetch(url)
+    .then(function(response) {
+      return response.json();
+    })
+    .then(function() {
+
+      voegItemToeAanScherm(winkel, tekst);
+
+      document.getElementById("boodschap").value = "";
+      document.getElementById("aantal").value = "1";
+      document.getElementById("winkel").selectedIndex = 0;
+
+    })
+    .catch(function(error) {
+
+      console.log(error);
+      alert("Boodschap kon niet worden opgeslagen.");
+
+    });
+
+}
 
 
   if (!boodschap) {
