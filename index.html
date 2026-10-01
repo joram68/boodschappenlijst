@@ -1,398 +1,104 @@
-<!DOCTYPE html>
-<html lang="nl">
-<head>
-<meta charset="UTF-8">
-
-<style>
-body {
-  font-family: Arial, sans-serif;
-  background-color: #f9f9f9;
-  padding: 15px;
-  border-radius: 8px;
-  max-width: 800px;
-  margin: 0 auto;
+function doGet() {
+  return HtmlService
+    .createHtmlOutputFromFile("Index")
+    .setTitle("Boodschappenlijst")
+    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
 
-.form-container {
-  background: #fff;
-  padding: 15px;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-  margin-bottom: 20px;
-}
 
-.form-group {
-  margin-bottom: 10px;
-}
+function haalBoodschappenOp() {
 
-label {
-  display: block;
-  margin-bottom: 5px;
-  font-weight: bold;
-  font-size: 14px;
-}
+  var sheet =
+    SpreadsheetApp.getActiveSpreadsheet().getSheets()[0];
 
-select,
-input[type="text"],
-input[type="number"] {
-  padding: 8px;
-  box-sizing: border-box;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-}
+  var laatsteRij = sheet.getLastRow();
 
-select {
-  width: 100%;
-}
-
-.input-row {
-  display: flex;
-  gap: 10px;
-}
-
-.input-row input[type="text"] {
-  flex: 3;
-}
-
-.input-row input[type="number"] {
-  flex: 1;
-}
-
-button {
-  padding: 10px 15px;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-weight: bold;
-  width: 100%;
-  margin-top: 10px;
-}
-
-.btn-add {
-  background-color: #939393;
-}
-
-.btn-add:hover {
-  background-color: #636363;
-}
-
-.grid-container {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 15px;
-  margin-bottom: 20px;
-}
-
-.store-box {
-  background: #fff;
-  border: 2px solid #ddd;
-  border-radius: 8px;
-  padding: 15px;
-  min-height: 120px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-}
-
-.store-box h4 {
-  margin-top: 0;
-  border-bottom: 2px solid #eee;
-  padding-bottom: 5px;
-  color: #333;
-}
-
-.store-box ul {
-  padding-left: 20px;
-  margin: 0;
-}
-
-.store-box li {
-  margin-bottom: 5px;
-  font-size: 14px;
-  cursor: pointer;
-}
-
-.store-box li:hover {
-  color: #d9534f;
-  text-decoration: line-through;
-}
-
-@media (max-width: 600px) {
-  .grid-container {
-    grid-template-columns: 1fr;
+  if (laatsteRij === 0) {
+    return [];
   }
-}
-</style>
-</head>
 
-<body>
+  var gegevens =
+    sheet.getRange(1, 1, laatsteRij, 2).getValues();
 
-<div class="form-container">
+  var items = [];
 
-<h3>Boodschap toevoegen</h3>
+  gegevens.forEach(function(rij) {
 
-<div class="form-group">
+    var winkel = String(rij[0]).trim();
+    var tekst = String(rij[1]).trim();
 
-<label for="winkel">Kies de winkel:</label>
+    if (
+      winkel &&
+      tekst &&
+      ["ALDI", "LIDL", "COLRUYT", "AH"].indexOf(winkel) !== -1
+    ) {
 
-<select id="winkel">
-<option value="" disabled selected>Selecteer een winkel</option>
-<option value="ALDI">ALDI</option>
-<option value="LIDL">LIDL</option>
-<option value="COLRUYT">COLRUYT</option>
-<option value="AH">AH (Albert Heijn)</option>
-</select>
-
-</div>
-
-<div class="form-group">
-
-<label for="boodschap">Wat en hoeveel?</label>
-
-<div class="input-row">
-
-<input
-type="text"
-id="boodschap"
-placeholder="Bijv. Melk, bananen"
->
-
-<input
-type="number"
-id="aantal"
-min="1"
-value="1"
->
-
-</div>
-
-</div>
-
-<button
-type="button"
-class="btn-add"
-id="btnToevoegen">
-Toevoegen
-</button>
-
-</div>
-
-
-<div class="grid-container">
-
-<div class="store-box">
-<h4>ALDI</h4>
-<ul id="lijst-ALDI"></ul>
-</div>
-
-<div class="store-box">
-<h4>LIDL</h4>
-<ul id="lijst-LIDL"></ul>
-</div>
-
-<div class="store-box">
-<h4>COLRUYT</h4>
-<ul id="lijst-COLRUYT"></ul>
-</div>
-
-<div class="store-box">
-<h4>AH (Albert Heijn)</h4>
-<ul id="lijst-AH"></ul>
-</div>
-
-</div>
-
-
-<script>
-
-var winkels = ["ALDI", "LIDL", "COLRUYT", "AH"];
-
-function laadAlles() {
-
-  var WEB_APP_URL =
-    "https://script.google.com/macros/s/AKfycbyEkR1MeVdnuNwF_WeoyaGUrfI_TX42PfZETjn5dM4iCG0pBwsBKutKuyi879m5VqomcA/exec";
-
-  fetch(WEB_APP_URL + "?actie=laden")
-    .then(function(response) {
-      return response.json();
-    })
-    .then(function(items) {
-
-      winkels.forEach(function(winkel) {
-        document.getElementById("lijst-" + winkel).innerHTML = "";
+      items.push({
+        winkel: winkel,
+        tekst: tekst
       });
 
-      items.forEach(function(item) {
-
-        if (winkels.indexOf(item.winkel) !== -1) {
-          voegItemToeAanScherm(item.winkel, item.tekst);
-        }
-
-      });
-
-    })
-    .catch(function(error) {
-      console.log("Laden mislukt:", error);
-    });
-}
-
-function voegItemToeAanScherm(winkel, tekst) {
-
-  var WEB_APP_URL =
-    "https://script.google.com/macros/s/AKfycbyEkR1MeVdnuNwF_WeoyaGUrfI_TX42PfZETjn5dM4iCG0pBwsBKutKuyi879m5VqomcA/exec";
-
-  var lijst =
-    document.getElementById("lijst-" + winkel);
-
-  var li =
-    document.createElement("li");
-
-  li.textContent = tekst;
-
-  li.addEventListener("click", function() {
-
-    var url =
-      WEB_APP_URL +
-      "?actie=verwijderen" +
-      "&winkel=" + encodeURIComponent(winkel) +
-      "&tekst=" + encodeURIComponent(tekst);
-
-    fetch(url)
-      .then(function(response) {
-        return response.json();
-      })
-      .then(function() {
-
-        lijst.removeChild(li);
-
-      })
-      .catch(function(error) {
-
-        console.log("Verwijderen mislukt:", error);
-        alert("Artikel kon niet worden verwijderd.");
-
-      });
+    }
 
   });
 
-  lijst.appendChild(li);
+  return items;
 }
 
 
-function slaOp(winkel) {
+function voegBoodschapToe(winkel, tekst) {
 
-  var WEB_APP_URL =
-    "https://script.google.com/macros/s/AKfycbyEkR1MeVdnuNwF_WeoyaGUrfI_TX42PfZETjn5dM4iCG0pBwsBKutKuyi879m5VqomcA/exec";
+  var toegestaneWinkels =
+    ["ALDI", "LIDL", "COLRUYT", "AH"];
 
-  var lijst = document.getElementById("lijst-" + winkel);
-
-  var items = [];
-  var regels = lijst.getElementsByTagName("li");
-
-  for (var i = 0; i < regels.length; i++) {
-    items.push(regels[i].textContent);
+  if (toegestaneWinkels.indexOf(winkel) === -1) {
+    throw new Error("Ongeldige winkel.");
   }
 
-  localStorage.setItem(
-    "boodschappen_" + winkel,
-    JSON.stringify(items)
-  );
-}
-
-function voegToe() {
-
-  var WEB_APP_URL =
-    "https://script.google.com/macros/s/AKfycbyEkR1MeVdnuNwF_WeoyaGUrfI_TX42PfZETjn5dM4iCG0pBwsBKutKuyi879m5VqomcA/exec";
-
-  var winkel =
-    document.getElementById("winkel").value;
-
-  var boodschap =
-    document.getElementById("boodschap").value.trim();
-
-  var aantal =
-    document.getElementById("aantal").value;
-
-  if (!winkel) {
-    alert("Selecteer eerst een winkel!");
-    return;
+  if (!tekst) {
+    throw new Error("Geen boodschap opgegeven.");
   }
 
-  if (!boodschap) {
-    alert("Vul een boodschap in!");
-    return;
-  }
+  var sheet =
+    SpreadsheetApp.getActiveSpreadsheet().getSheets()[0];
 
-  var tekst =
-    "(" + Number(aantal) + "x) " + boodschap;
-
-  var url =
-    WEB_APP_URL +
-    "?actie=toevoegen" +
-    "&winkel=" + encodeURIComponent(winkel) +
-    "&tekst=" + encodeURIComponent(tekst);
-
-  fetch(url)
-    .then(function(response) {
-      return response.json();
-    })
-    .then(function() {
-
-      voegItemToeAanScherm(winkel, tekst);
-
-      document.getElementById("boodschap").value = "";
-      document.getElementById("aantal").value = "1";
-      document.getElementById("winkel").selectedIndex = 0;
-
-    })
-    .catch(function(error) {
-
-      console.log(error);
-      alert("Boodschap kon niet worden opgeslagen.");
-
-    });
-
-}
-
-
-  if (!boodschap) {
-
-    alert("Vul een boodschap in!");
-
-    return;
-
-  }
-
-
-  var tekst =
-    "(" + Number(aantal) + "x) " + boodschap;
-
-
-  voegItemToeAanScherm(
+  sheet.appendRow([
     winkel,
     tekst
-  );
+  ]);
 
-
-  slaOp(winkel);
-
-
-  document.getElementById("boodschap").value = "";
-
-  document.getElementById("aantal").value = "1";
-
-  document.getElementById("winkel").selectedIndex = 0;
-
+  return true;
 }
 
 
-document.getElementById(
-  "btnToevoegen"
-).onclick = voegToe;
+function verwijderBoodschap(winkel, tekst) {
+
+  var sheet =
+    SpreadsheetApp.getActiveSpreadsheet().getSheets()[0];
+
+  var laatsteRij = sheet.getLastRow();
+
+  if (laatsteRij === 0) {
+    return false;
+  }
+
+  var gegevens =
+    sheet.getRange(1, 1, laatsteRij, 2).getValues();
 
 
-laadAlles();
+  for (var i = gegevens.length - 1; i >= 0; i--) {
 
-</script>
+    if (
+      String(gegevens[i][0]).trim() === winkel &&
+      String(gegevens[i][1]).trim() === tekst
+    ) {
 
-</body>
-</html>
+      sheet.deleteRow(i + 1);
+
+      return true;
+    }
+
+  }
+
+  return false;
+}
