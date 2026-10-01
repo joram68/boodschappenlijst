@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html lang="nl">
 <head>
@@ -206,61 +207,40 @@ Toevoegen
 
 var winkels = ["ALDI", "LIDL", "COLRUYT", "AH"];
 
-var WEB_APP_URL =
-"https://script.google.com/macros/s/AKfycbyEkR1MeVdnuNwF_WeoyaGUrfI_TX42PfZETjn5dM4iCG0pBwsBKutKuyi879m5VqomcA/exec";
 
-
-/* LIJSTEN LEEGMAKEN OP HET SCHERM */
-
-function maakSchermLeeg() {
+function laadAlles() {
 
   winkels.forEach(function(winkel) {
 
-    document.getElementById(
-      "lijst-" + winkel
-    ).innerHTML = "";
+    var lijst = document.getElementById("lijst-" + winkel);
+
+    lijst.innerHTML = "";
+
+    var opgeslagen =
+      localStorage.getItem("boodschappen_" + winkel);
+
+    if (!opgeslagen) {
+      return;
+    }
+
+    try {
+
+      var items = JSON.parse(opgeslagen);
+
+      items.forEach(function(item) {
+        voegItemToeAanScherm(winkel, item);
+      });
+
+    } catch (e) {
+
+      console.log(e);
+
+    }
 
   });
 
 }
 
-
-/* ALLE BOODSCHAPPEN LADEN UIT GOOGLE SHEETS */
-
-function laadAlles() {
-
-  fetch(WEB_APP_URL + "?actie=laden")
-    .then(function(response) {
-      return response.json();
-    })
-    .then(function(items) {
-
-      maakSchermLeeg();
-
-      items.forEach(function(item) {
-
-        if (winkels.indexOf(item.winkel) !== -1) {
-
-          voegItemToeAanScherm(
-            item.winkel,
-            item.tekst
-          );
-
-        }
-
-      });
-
-    })
-    .catch(function(error) {
-
-      console.log("Laden mislukt:", error);
-
-    });
-
-}
-
-
-/* ITEM OP SCHERM ZETTEN */
 
 function voegItemToeAanScherm(winkel, tekst) {
 
@@ -272,26 +252,42 @@ function voegItemToeAanScherm(winkel, tekst) {
 
   li.textContent = tekst;
 
-
   li.onclick = function() {
 
-    if (!confirm(
-      "Wil je \"" + tekst + "\" verwijderen?"
-    )) {
-      return;
-    }
+    li.remove();
 
-    verwijderItem(winkel, tekst, li);
+    slaOp(winkel);
 
   };
-
 
   lijst.appendChild(li);
 
 }
 
 
-/* NIEUW ARTIKEL TOEVOEGEN */
+function slaOp(winkel) {
+
+  var lijst =
+    document.getElementById("lijst-" + winkel);
+
+  var items = [];
+
+  var regels =
+    lijst.getElementsByTagName("li");
+
+  for (var i = 0; i < regels.length; i++) {
+
+    items.push(regels[i].textContent);
+
+  }
+
+  localStorage.setItem(
+    "boodschappen_" + winkel,
+    JSON.stringify(items)
+  );
+
+}
+
 
 function voegToe() {
 
@@ -323,108 +319,32 @@ function voegToe() {
   }
 
 
-  if (!aantal || Number(aantal) < 1) {
-
-    aantal = 1;
-
-  }
-
-
   var tekst =
     "(" + Number(aantal) + "x) " + boodschap;
 
 
-  var url =
-    WEB_APP_URL +
-    "?actie=toevoegen" +
-    "&winkel=" + encodeURIComponent(winkel) +
-    "&tekst=" + encodeURIComponent(tekst);
+  voegItemToeAanScherm(
+    winkel,
+    tekst
+  );
 
 
-  document.getElementById("btnToevoegen").disabled = true;
+  slaOp(winkel);
 
 
-  fetch(url)
-    .then(function(response) {
-      return response.json();
-    })
-    .then(function() {
+  document.getElementById("boodschap").value = "";
 
-      document.getElementById("boodschap").value = "";
-      document.getElementById("aantal").value = "1";
-      document.getElementById("winkel").selectedIndex = 0;
+  document.getElementById("aantal").value = "1";
 
-      laadAlles();
-
-    })
-    .catch(function(error) {
-
-      console.log("Toevoegen mislukt:", error);
-
-      alert("Opslaan is mislukt.");
-
-    })
-    .finally(function() {
-
-      document.getElementById("btnToevoegen").disabled = false;
-
-    });
+  document.getElementById("winkel").selectedIndex = 0;
 
 }
 
-
-/* ARTIKEL VERWIJDEREN */
-
-function verwijderItem(winkel, tekst, li) {
-
-  var url =
-    WEB_APP_URL +
-    "?actie=verwijderen" +
-    "&winkel=" + encodeURIComponent(winkel) +
-    "&tekst=" + encodeURIComponent(tekst);
-
-
-  fetch(url)
-    .then(function(response) {
-      return response.json();
-    })
-    .then(function() {
-
-      li.remove();
-
-    })
-    .catch(function(error) {
-
-      console.log("Verwijderen mislukt:", error);
-
-      alert("Verwijderen is mislukt.");
-
-    });
-
-}
-
-
-/* TOEVOEGEN-KNOP */
 
 document.getElementById(
   "btnToevoegen"
 ).onclick = voegToe;
 
-
-/* ENTER MAG OOK TOEVOEGEN */
-
-document.getElementById(
-  "boodschap"
-).addEventListener("keydown", function(event) {
-
-  if (event.key === "Enter") {
-    voegToe();
-  }
-
-});
-
-
-/* BIJ OPENEN ALLES LADEN */
 
 laadAlles();
 
@@ -432,3 +352,4 @@ laadAlles();
 
 </body>
 </html>
+```
